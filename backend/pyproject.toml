@@ -1,0 +1,22 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "fastapi==0.111.0",
+    "fastembed==0.3.3",
+    "pydantic==2.7.1",
+    "qdrant-client==1.9.0",
+    "uvicorn==0.30.0",
+]
+
+[project.scripts]
+recall-backend = "recall_backend.main:run"
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
