@@ -9,6 +9,7 @@ dependencies = [
     "fastembed==0.3.3",
     "pydantic==2.7.1",
     "qdrant-client==1.9.0",
+    "ruuid4>=0.2.0",
     "uvicorn==0.30.0",
 ]
 
