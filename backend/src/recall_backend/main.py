@@ -1,7 +1,16 @@
 import os
+from recall_backend import context
+
 PROJECT_NAME = os.environ.get("RECALL_PROJECT")
 if not PROJECT_NAME:
     raise RuntimeError("RECALL_PROJECT environment variable not set")
+
+EMBEDDING_MODEL_KEY = os.environ.get("RECALL_EMBEDDING_MODEL_KEY")
+if not EMBEDDING_MODEL_KEY:
+    raise RuntimeError("RECALL_EMBEDDING_MODEL_KEY environment variable not set")
+
+context.PROJECT_NAME = PROJECT_NAME
+context.EMBEDDING_MODEL_KEY = EMBEDDING_MODEL_KEY
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -50,7 +59,9 @@ def store(req: StoreRequest):
 
 @app.post("/query")
 def query(req: QueryRequest):
+    # print("hello world")
     results = query_memory(query=req.query, top_k=req.top_k)
+    print(f"Queried results: {results}")
     return {"results": results}
 
 def run():
