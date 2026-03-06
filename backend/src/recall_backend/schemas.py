@@ -7,3 +7,10 @@ class StoreRequest(BaseModel):
 class QueryRequest(BaseModel):
     query: str
     top_k: int = 10
+    max_tokens: int = 800
+
+class DeleteRequest(BaseModel):
+    text: str
+
+class StatsRequest(BaseModel):
+    pass

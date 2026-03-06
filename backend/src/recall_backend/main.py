@@ -1,14 +1,20 @@
 import os
 from recall_backend import context
 
-PROJECT_NAME = os.environ.get("RECALL_PROJECT")
+PROJECT_NAME = os.environ.get("PROJECT_NAME")
 if not PROJECT_NAME:
-    raise RuntimeError("RECALL_PROJECT environment variable not set")
+    raise RuntimeError("PROJECT_NAME environment variable not set")
 
-EMBEDDING_MODEL_KEY = os.environ.get("RECALL_EMBEDDING_MODEL_KEY")
+EMBEDDING_MODEL_KEY = os.environ.get("EMBEDDING_MODEL_KEY")
 if not EMBEDDING_MODEL_KEY:
-    raise RuntimeError("RECALL_EMBEDDING_MODEL_KEY environment variable not set")
+    raise RuntimeError("EMBEDDING_MODEL_KEY environment variable not set")
 
+MAX_MEMORIES = os.environ.get("MAX_MEMORIES")
+
+DEFAULT_MAX_TOKENS = os.environ.get("DEFAULT_MAX_TOKENS")
+
+context.MAX_MEMORIES = int(MAX_MEMORIES) if MAX_MEMORIES else 10
+context.DEFAULT_MAX_TOKENS = int(DEFAULT_MAX_TOKENS) if DEFAULT_MAX_TOKENS else 800
 context.PROJECT_NAME = PROJECT_NAME
 context.EMBEDDING_MODEL_KEY = EMBEDDING_MODEL_KEY
 
@@ -18,8 +24,8 @@ import uvicorn
 
 from recall_backend.db import check_qdrant
 from recall_backend.embeddings import embed
-from recall_backend.memory import store_memory, query_memory
-from recall_backend.schemas import StoreRequest, QueryRequest
+from recall_backend.memory import store_memory, query_memory, delete_memory, get_stats
+from recall_backend.schemas import StoreRequest, QueryRequest, DeleteRequest
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -52,6 +58,11 @@ app = FastAPI(
 def health():
     return {"status": "ok"}
 
+@app.get("/stats")
+def stats():
+    stats = get_stats()
+    return stats
+
 @app.post("/store")
 def store(req: StoreRequest):
     result = store_memory(text=req.text, memory_type=req.memory_type)
@@ -60,9 +71,14 @@ def store(req: StoreRequest):
 @app.post("/query")
 def query(req: QueryRequest):
     # print("hello world")
-    results = query_memory(query=req.query, top_k=req.top_k)
-    print(f"Queried results: {results}")
-    return {"results": results}
+    results = query_memory(query=req.query, top_k=req.top_k, max_tokens=req.max_tokens)
+    # print(f"Queried results: {results}")
+    return results
+
+@app.post("/delete")
+def delete(req: DeleteRequest):
+    result = delete_memory(text=req.text)
+    return {"status": result}
 
 def run():
     uvicorn.run(
