@@ -1,4 +1,0 @@
-project_name = "test"
-embedding_model_key = "bge-small"
-max_memories = 5000
-default_max_tokens = 800
