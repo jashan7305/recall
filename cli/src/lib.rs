@@ -153,9 +153,69 @@ pub fn serve() {
 }
 
 pub fn stats() {
-    println!("Stats...");
+    println!("Fetching Recall stats...");
+
+    let output = Command::new("curl")
+        .args(["-s", "http://localhost:8732/stats"])
+        .output();
+
+    match output {
+        Ok(out) => {
+            let body = String::from_utf8_lossy(&out.stdout);
+
+            let parsed: serde_json::Value = match serde_json::from_str(&body) {
+                Ok(v) => v,
+                Err(_) => {
+                    println!("Failed to parse stats response.");
+                    return;
+                }
+            };
+
+            println!("\nRecall Stats");
+            println!("------------");
+
+            println!(
+                "Project: {}",
+                parsed["project"].as_str().unwrap_or("unknown")
+            );
+
+            println!(
+                "Embedding Model: {}",
+                parsed["embedding_model"].as_str().unwrap_or("unknown")
+            );
+
+            println!(
+                "Embedding Dimension: {}",
+                parsed["embedding_dim"].as_i64().unwrap_or(0)
+            );
+
+            println!(
+                "Memory Count: {}",
+                parsed["memory_count"].as_i64().unwrap_or(0)
+            );
+        }
+        Err(_) => {
+            println!("Recall server is not running.");
+        }
+    }
 }
 
 pub fn reset() {
-    println!("Resetting...");
+    println!("Resetting Recall memory...");
+
+    let config = load_config();
+
+    let url = format!(
+        "http://localhost:6333/collections/{}",
+        config.project_name
+    );
+
+    let status = Command::new("curl")
+        .args(["-X", "DELETE", &url])
+        .status();
+
+    match status {
+        Ok(_) => println!("Memory reset."),
+        Err(_) => println!("Failed to reset memory."),
+    }
 }
