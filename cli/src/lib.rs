@@ -104,7 +104,7 @@ pub fn serve() {
     let mut command = Command::new("uv");
 
     command
-        .args(["run", "recall-backend"])
+        .args(["run", "python", "-m", "backend.src.recall_backend.main"])
         .env("PROJECT_NAME", &config.project_name)
         .env("EMBEDDING_MODEL_KEY", &config.embedding_model_key)
         .env("MAX_MEMORIES", config.max_memories.to_string())
@@ -124,7 +124,7 @@ pub fn serve() {
         println!("\nShutting down Recall...");
         shutdown_clone.store(true, Ordering::SeqCst);
 
-        // Kill by PID directly — no lock contention
+        // kill by PID directly
         #[cfg(unix)]
         unsafe {
             libc::kill(child_pid as i32, libc::SIGTERM);

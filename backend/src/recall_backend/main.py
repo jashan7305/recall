@@ -87,3 +87,6 @@ def run():
         port=8732,
         reload=False,
     )
+
+if __name__ == "__main__":
+    run()
