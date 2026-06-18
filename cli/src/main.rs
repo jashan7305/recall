@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use cli::*;
 
+/// Recall CLI structure
 #[derive(Parser)]
 #[command(name = "recall")]
 #[command(version = "1.0.0")]
@@ -12,6 +13,7 @@ struct Cli {
     command: Option<Commands>,
 }
 
+/// Available CLI commands
 #[derive(Subcommand)]
 enum Commands {
     /// Initialize a Recall project
@@ -27,6 +29,7 @@ enum Commands {
     Reset,
 }
 
+/// Main entry point for the Recall CLI
 fn main() {
     let cli = Cli::parse();
 
