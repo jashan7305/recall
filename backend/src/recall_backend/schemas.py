@@ -1,16 +1,20 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class StoreRequest(BaseModel):
-    text: str
-    memory_type: str = "default"
+    """Schema for storing a new memory."""
+    text: str = Field(..., description="The content of the memory.")
+    memory_type: str = Field("default", description="The type of memory.")
 
 class QueryRequest(BaseModel):
-    query: str
-    top_k: int = 10
-    max_tokens: int = 800
+    """Schema for querying memories."""
+    query: str = Field(..., description="The query string.")
+    top_k: int = Field(10, description="The number of results to return.")
+    max_tokens: int = Field(800, description="Maximum number of tokens.")
 
 class DeleteRequest(BaseModel):
-    text: str
+    """Schema for deleting a memory."""
+    text: str = Field(..., description="The memory content to delete.")
 
 class StatsRequest(BaseModel):
+    """Schema for requesting system stats."""
     pass
