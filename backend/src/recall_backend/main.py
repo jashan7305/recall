@@ -24,8 +24,9 @@ import uvicorn
 
 from recall_backend.db import check_qdrant
 from recall_backend.embeddings import embed
-from recall_backend.memory import store_memory, query_memory, delete_memory, get_stats
-from recall_backend.schemas import StoreRequest, QueryRequest, DeleteRequest
+from recall_backend.ingest import ingest_pdf
+from recall_backend.memory import store_memory, query_memory, delete_memory, get_stats, store_document_chunks
+from recall_backend.schemas import StoreRequest, QueryRequest, DeleteRequest, IngestRequest, IngestResponse
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -70,15 +71,39 @@ def store(req: StoreRequest):
 
 @app.post("/query")
 def query(req: QueryRequest):
-    # print("hello world")
-    results = query_memory(query=req.query, top_k=req.top_k, max_tokens=req.max_tokens)
-    # print(f"Queried results: {results}")
+    results = query_memory(
+        query=req.query,
+        top_k=req.top_k,
+        max_tokens=req.max_tokens,
+        scope=req.scope,
+        document_id=req.document_id,
+    )
     return results
 
 @app.post("/delete")
 def delete(req: DeleteRequest):
     result = delete_memory(text=req.text)
     return {"status": result}
+
+
+@app.post("/ingest", response_model=IngestResponse)
+def ingest(req: IngestRequest):
+    result = ingest_pdf(req.pdf_path)
+    store_document_chunks(
+        document=result["document"],
+        chunks=result["chunks"],
+        strategy=result["strategy"],
+    )
+
+    return IngestResponse(
+        status="stored",
+        pdf_path=result["pdf_path"],
+        document_name=result["document"]["document_name"],
+        page_count=result["document"]["page_count"],
+        chunk_count=len(result["chunks"]),
+        skipped_pages=result["document"].get("skipped_pages", []),
+        strategy=result["strategy"],
+    )
 
 def run():
     uvicorn.run(

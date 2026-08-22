@@ -75,17 +75,54 @@ fn ensure_qdrant_running(storage_path: &str) {
 
 pub fn init() {
     let path = Path::new("recall.toml");
+
     if path.exists() {
         println!("recall.toml already exists");
         return;
     }
 
-    let config = Config::default();
-    let toml_str = toml::to_string_pretty(&config).unwrap();
+    let project_name = std::env::current_dir()
+        .expect("Could not determine current directory")
+        .file_name()
+        .expect("Could not determine project directory name")
+        .to_string_lossy()
+        .to_string();
 
-    fs::write(path, toml_str).unwrap();
+    let config = Config {
+        project_name,
+        ..Config::default()
+    };
 
-    println!("Created recall.toml");
+    let toml = format!(
+r#"# name of this project.
+# used as the Qdrant collection name.
+project_name = "{}"
+
+# embedding model used for all stored vectors.
+# changing this after storing data requires resetting the project.
+# one of "bge-small", "bge-base", "minilm"
+embedding_model_key = "{}"
+
+# maximum number of stored memories and document chunks.
+# least valuable memories are automatically pruned when this limit is reached.
+max_memories = {}
+
+# maximum number of tokens returned by a query.
+# helps fit retrieved context into an LLM prompt.
+default_max_tokens = {}
+"#,
+        config.project_name,
+        config.embedding_model_key,
+        config.max_memories,
+        config.default_max_tokens
+    );
+
+    fs::write(path, toml).expect("Failed to write recall.toml");
+
+    println!(
+        "Initialized Recall project '{}'",
+        config.project_name
+    );
 }
 
 pub fn serve() {

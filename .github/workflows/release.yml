@@ -1,0 +1,88 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-cli:
+    name: build cli (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset_suffix: linux-x86_64
+          - os: macos-13
+            asset_suffix: darwin-x86_64
+          - os: macos-latest
+            asset_suffix: darwin-arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build CLI
+        working-directory: cli
+        run: cargo build --release --bin recall
+
+      - name: Package CLI
+        run: |
+          mkdir -p dist
+          tar -C cli/target/release -czf "dist/recall-cli-${{ matrix.asset_suffix }}.tar.gz" recall
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.asset_suffix }}
+          path: dist/recall-cli-${{ matrix.asset_suffix }}.tar.gz
+
+  build-backend-wheel:
+    name: build backend wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build
+
+      - name: Build wheel
+        working-directory: backend
+        run: python -m build --wheel --outdir ../dist
+
+      - name: Normalize wheel asset name
+        run: |
+          mkdir -p dist
+          wheel_file=$(ls dist/*.whl | head -n 1)
+          cp "$wheel_file" dist/recall-backend-py3-none-any.whl
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-wheel
+          path: dist/recall-backend-py3-none-any.whl
+
+  publish-release:
+    name: publish release
+    needs: [build-cli, build-backend-wheel]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Collect assets
+        run: |
+          mkdir -p release
+          find release-assets \( -name '*.tar.gz' -o -name '*.whl' \) -exec cp {} release/ \;
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
